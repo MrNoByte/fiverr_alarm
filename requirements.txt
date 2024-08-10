@@ -1,3 +1,5 @@
 imapclient
 pyzmail36
 python-dotenv
+fastapi
+uvicorn
