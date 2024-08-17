@@ -3,3 +3,4 @@ pyzmail36
 python-dotenv
 fastapi
 uvicorn
+requests
