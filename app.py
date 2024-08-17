@@ -6,10 +6,16 @@ import os
 from dotenv import load_dotenv
 from typing import List
 
+import requests
+
 # Load environment variables from .env file
 load_dotenv()
 
 # Email account credentials
+# Load environment variables
+BASE_URL = os.getenv('ALARM_BASE_URL', 'http://localhost:8000')
+USER_ID = os.getenv('USER_ID', '1')
+JWT_TOKEN = os.getenv('JWT_TOKEN', '')
 EMAIL_ACCOUNT = os.getenv("EMAIL_ID")
 EMAIL_PASSWORD = os.getenv("APP_PASSWORD")
 IMAP_SERVER = "imap.gmail.com"
@@ -57,6 +63,17 @@ def check_for_new_emails():
 async def root():
     return {"message": "Hello World"}
 
+@app.get('/mail-alert')
+async def get_mail_alert():
+    try:
+        emails = check_for_new_emails()
+        if not emails:
+            return {"message": "No new emails from alert senders."}
+        send_fcm_alert(emails[0]['subject'])
+        return emails
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.get("/check-emails", response_model=List[dict])
 async def get_new_emails():
     try:
@@ -66,6 +83,35 @@ async def get_new_emails():
         return emails
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    
+
+# @app.get("/check-emails")
+def send_fcm_alert(message="New Fiverr message received"):
+    print("Sending FCM alert")
+    url = f"{BASE_URL}/api/v1/admin/user/notification/{USER_ID}"
+
+    # Set up the headers with the bearer token
+    headers = {
+        'Authorization': f'Bearer {JWT_TOKEN}',
+        'Content-Type': 'application/json'
+    }
+
+    # Define the payload
+    payload = {
+        "title": "Fiverr Notification",
+        "body": message,
+        "data": {
+            "alert": "u_start"
+        }
+    }
+
+    # Make the POST request
+    response = requests.post(url, headers=headers, json=payload)
+
+    # Print the response
+    print(response.status_code)
+    print(response.json())
+
 
 # To run the FastAPI application
 # Run this file using `uvicorn` command
